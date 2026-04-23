@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
+    />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <meta name="description" content="Dashboard สรุปข้อมูลการสอบถาม Online และนัดหมายแยกแผนก โรงพยาบาลสุพมิตร" />
+    <title>Dashboard สรุปข้อมูล | Supamitr Hospital</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+      /* Dashboard-specific styles */
+      .dash { padding: 1.25rem 0; font-family: 'Prompt', sans-serif; }
+      .section-title { font-size: 13px; font-weight: 500; color: var(--color-text-secondary, #6b7280); letter-spacing: 0.03em; text-transform: uppercase; margin-bottom: 10px; }
+      .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+      .metric { background: var(--color-background-secondary, #f9fafb); border-radius: 10px; padding: 14px 16px; }
+      .metric-label { font-size: 12px; color: var(--color-text-secondary, #6b7280); margin-bottom: 4px; }
+      .metric-value { font-size: 24px; font-weight: 500; color: var(--color-text-primary, #111827); }
+      .metric-unit { font-size: 13px; color: var(--color-text-secondary, #6b7280); font-weight: 400; }
+      .metric.accent { background: #E6F1FB; }
+      .metric.accent .metric-value { color: #185FA5; }
+      .metric.accent .metric-label, .metric.accent .metric-unit { color: #378ADD; }
+      .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 1.5rem; }
+      .dash-card { background: #fff; border: 0.5px solid #e5e7eb; border-radius: 14px; padding: 1rem 1.25rem; }
+      .dark .dash-card { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.08); }
+      .dark .metric { background: rgba(255,255,255,0.05); }
+      .card-title { font-size: 13px; font-weight: 500; color: var(--color-text-secondary, #6b7280); margin-bottom: 12px; }
+      .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+      .bar-label { font-size: 12px; color: var(--color-text-secondary, #6b7280); min-width: 110px; text-align: right; }
+      .bar-track { flex: 1; background: #f3f4f6; border-radius: 3px; height: 14px; overflow: hidden; }
+      .dark .bar-track { background: rgba(255,255,255,0.07); }
+      .bar-fill { height: 100%; border-radius: 3px; }
+      .bar-val { font-size: 12px; font-weight: 500; color: #111827; min-width: 38px; }
+      .dark .bar-val { color: #f9fafb; }
+      .dept-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      .dept-table th { text-align: left; font-weight: 500; font-size: 12px; color: #6b7280; padding: 4px 6px; border-bottom: 0.5px solid #e5e7eb; }
+      .dark .dept-table th { color: #9ca3af; border-color: rgba(255,255,255,0.08); }
+      .dept-table td { padding: 6px 6px; border-bottom: 0.5px solid #e5e7eb; color: #111827; }
+      .dark .dept-table td { color: #f3f4f6; border-color: rgba(255,255,255,0.08); }
+      .dept-table tr:last-child td { border-bottom: none; }
+      .dept-table td:nth-child(2) { text-align: right; font-weight: 500; }
+      .pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+      .pill-blue { background: #E6F1FB; color: #185FA5; }
+      .pill-teal { background: #E1F5EE; color: #0F6E56; }
+      .pill-amber { background: #FAEEDA; color: #854F0B; }
+      .dash-divider { border: none; border-top: 0.5px solid #e5e7eb; margin: 1.25rem 0; }
+      .dark .dash-divider { border-color: rgba(255,255,255,0.08); }
+      .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; font-size: 12px; color: #6b7280; }
+      .legend-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 4px; }
+      @media (max-width: 500px) { .chart-row { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body
+    x-data="{ page: 'dashboardSummary', 'loaded': true, 'darkMode': false, 'stickyMenu': false, 'sidebarToggle': false, 'scrollTop': false }"
+    x-init="
+         darkMode = JSON.parse(localStorage.getItem('darkMode'));
+         $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(value)))"
+    :class="{'dark bg-gray-900': darkMode === true}"
+  >
+    <!-- ===== Preloader Start ===== -->
+    <include src="./partials/preloader.html"></include>
+    <!-- ===== Preloader End ===== -->
+
+    <!-- ===== Page Wrapper Start ===== -->
+    <div class="flex h-screen overflow-hidden">
+      <!-- ===== Sidebar Start ===== -->
+      <include src="./partials/sidebar.html"></include>
+      <!-- ===== Sidebar End ===== -->
+
+      <!-- ===== Content Area Start ===== -->
+      <div class="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
+        <!-- Small Device Overlay Start -->
+        <include src="./partials/overlay.html" />
+        <!-- Small Device Overlay End -->
+
+        <!-- ===== Header Start ===== -->
+        <include src="./partials/header.html" />
+        <!-- ===== Header End ===== -->
+
+        <!-- ===== Main Content Start ===== -->
+        <main>
+          <div class="mx-auto max-w-(--breakpoint-2xl) p-4 md:p-6">
+            <!-- Breadcrumb Start -->
+            <div x-data="{ pageName: `Dashboard สรุปข้อมูล`}">
+              <include src="./partials/breadcrumb.html" />
+            </div>
+            <!-- Breadcrumb End -->
+
+            <div class="rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/[0.03] xl:px-8 xl:py-8">
+              <div class="dash">
+                <h2 style="font-size: 16px; font-weight: 500; color: #111827; margin-bottom: 4px;" class="dark:!text-white">Dashboard สรุปข้อมูล</h2>
+                <p style="font-size: 13px; color: #6b7280; margin-bottom: 1.25rem;">เดือนมีนาคม 2569</p>
+
+                <!-- ===== Section: ภาพรวม ===== -->
+                <div class="section-title">ภาพรวมการสอบถาม Online ทั้งหมด</div>
+                <div class="metric-grid">
+                  <div class="metric accent">
+                    <div class="metric-label">รวมทั้งหมด</div>
+                    <div class="metric-value">3,751<span class="metric-unit"> ราย</span></div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Line OA</div>
+                    <div class="metric-value">723<span class="metric-unit"> ราย</span></div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Facebook รพ</div>
+                    <div class="metric-value">316<span class="metric-unit"> ราย</span></div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Facebook ต้อกระจก</div>
+                    <div class="metric-value">153<span class="metric-unit"> ราย</span></div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Website รพ</div>
+                    <div class="metric-value">1,923<span class="metric-unit"> ราย</span></div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Website ต้อกระจก</div>
+                    <div class="metric-value">636<span class="metric-unit"> ราย</span></div>
+                  </div>
+                </div>
+
+                <hr class="dash-divider">
+
+                <!-- ===== Section: Charts ===== -->
+                <div class="chart-row">
+                  <!-- Pie Chart Card -->
+                  <div class="dash-card">
+                    <div class="card-title">สัดส่วนช่องทาง Online</div>
+                    <div style="position: relative; height: 200px;">
+                      <canvas id="pieChart" role="img" aria-label="สัดส่วนช่องทาง Online ทั้ง 5 ช่องทาง">รวม 3751 ราย: Website รพ 1923, Line OA 723, Website ต้อกระจก 636, Facebook รพ 316, Facebook ต้อกระจก 153</canvas>
+                    </div>
+                    <div class="legend" style="margin-top:8px;">
+                      <span><span class="legend-dot" style="background:#378ADD;"></span>Website รพ 51%</span>
+                      <span><span class="legend-dot" style="background:#1D9E75;"></span>Line OA 19%</span>
+                      <span><span class="legend-dot" style="background:#EF9F27;"></span>Web ต้อกระจก 17%</span>
+                      <span><span class="legend-dot" style="background:#D85A30;"></span>FB รพ 8%</span>
+                      <span><span class="legend-dot" style="background:#D4537E;"></span>FB ต้อกระจก 4%</span>
+                    </div>
+                  </div>
+
+                  <!-- Bar Chart Card -->
+                  <div class="dash-card">
+                    <div class="card-title">จำนวนสอบถามแยกแผนก</div>
+                    <div class="bar-row">
+                      <span class="bar-label">จักษุ</span>
+                      <div class="bar-track"><div class="bar-fill" style="width:100%;background:#378ADD;"></div></div>
+                      <span class="bar-val">1,150</span>
+                    </div>
+                    <div class="bar-row">
+                      <span class="bar-label">ตรวจสุขภาพ</span>
+                      <div class="bar-track"><div class="bar-fill" style="width:82.6%;background:#1D9E75;"></div></div>
+                      <span class="bar-val">950</span>
+                    </div>
+                    <div class="bar-row">
+                      <span class="bar-label">วัคซีน</span>
+                      <div class="bar-track"><div class="bar-fill" style="width:43.5%;background:#EF9F27;"></div></div>
+                      <span class="bar-val">500</span>
+                    </div>
+                    <div class="bar-row">
+                      <span class="bar-label">OPD</span>
+                      <div class="bar-track"><div class="bar-fill" style="width:39.1%;background:#D85A30;"></div></div>
+                      <span class="bar-val">450</span>
+                    </div>
+                    <div class="bar-row">
+                      <span class="bar-label">สูตินารีเวช</span>
+                      <div class="bar-track"><div class="bar-fill" style="width:24.8%;background:#D4537E;"></div></div>
+                      <span class="bar-val">285</span>
+                    </div>
+                    <div class="bar-row">
+                      <span class="bar-label">คลินิคเด็ก</span>
+                      <div class="bar-track"><div class="bar-fill" style="width:17.4%;background:#7F77DD;"></div></div>
+                      <span class="bar-val">200</span>
+                    </div>
+                    <div class="bar-row">
+                      <span class="bar-label">ถามเรื่องสุขภาพ</span>
+                      <div class="bar-track"><div class="bar-fill" style="width:16.9%;background:#888780;"></div></div>
+                      <span class="bar-val">195</span>
+                    </div>
+                    <div class="bar-row">
+                      <span class="bar-label">อื่นๆ</span>
+                      <div class="bar-track"><div class="bar-fill" style="width:3.1%;background:#B4B2A9;"></div></div>
+                      <span class="bar-val">36</span>
+                    </div>
+                  </div>
+                </div>
+
+                <hr class="dash-divider">
+
+                <!-- ===== Section: นัดหมายแยกแผนก ===== -->
+                <div class="section-title">สรุปนัดหมายแยกแผนก</div>
+                <div class="dash-card" style="margin-bottom: 1.5rem;">
+                  <table class="dept-table">
+                    <thead>
+                      <tr>
+                        <th>แผนก</th>
+                        <th style="text-align:right;">นัดหมาย (ราย)</th>
+                        <th style="text-align:center;">ช่องทางหลัก</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>จักษุ (Online + Call center)</td>
+                        <td style="text-align:right;font-weight:500;">201</td>
+                        <td style="text-align:center;"><span class="pill pill-blue">Line OA + FB</span></td>
+                      </tr>
+                      <tr>
+                        <td>ตรวจสุขภาพ</td>
+                        <td style="text-align:right;font-weight:500;">163</td>
+                        <td style="text-align:center;"><span class="pill pill-blue">Line OA + FB</span></td>
+                      </tr>
+                      <tr>
+                        <td>วัคซีน</td>
+                        <td style="text-align:right;font-weight:500;">53</td>
+                        <td style="text-align:center;"><span class="pill pill-teal">Line OA + FB</span></td>
+                      </tr>
+                      <tr>
+                        <td>สูตินารีเวช</td>
+                        <td style="text-align:right;font-weight:500;">31</td>
+                        <td style="text-align:center;"><span class="pill pill-teal">Line OA + FB</span></td>
+                      </tr>
+                      <tr>
+                        <td>OPD</td>
+                        <td style="text-align:right;font-weight:500;">20</td>
+                        <td style="text-align:center;"><span class="pill pill-amber">Line OA + FB</span></td>
+                      </tr>
+                      <tr>
+                        <td>คลินิคเด็ก</td>
+                        <td style="text-align:right;font-weight:500;">23</td>
+                        <td style="text-align:center;"><span class="pill pill-amber">Line OA + FB</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <hr class="dash-divider">
+
+                <!-- ===== Section: จักษุ Call ทักเข้า ===== -->
+                <div class="section-title">จักษุ — รายละเอียด Call ทักเข้า</div>
+                <div class="metric-grid">
+                  <div class="metric">
+                    <div class="metric-label">Line OA ทัก</div>
+                    <div class="metric-value">450<span class="metric-unit"> ราย</span></div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Facebook รพ ทัก</div>
+                    <div class="metric-value">250<span class="metric-unit"> ราย</span></div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">FB ต้อกระจก ทัก</div>
+                    <div class="metric-value">135<span class="metric-unit"> ราย</span></div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Call Center</div>
+                    <div class="metric-value">602<span class="metric-unit"> ราย</span></div>
+                  </div>
+                </div>
+
+              </div><!-- .dash -->
+            </div>
+          </div>
+        </main>
+        <!-- ===== Main Content End ===== -->
+      </div>
+      <!-- ===== Content Area End ===== -->
+    </div>
+    <!-- ===== Page Wrapper End ===== -->
+
+    <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+    <script>
+      new Chart(document.getElementById('pieChart'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Website รพ','Line OA','Website ต้อกระจก','Facebook รพ','Facebook ต้อกระจก'],
+          datasets: [{
+            data: [1923, 723, 636, 316, 153],
+            backgroundColor: ['#378ADD','#1D9E75','#EF9F27','#D85A30','#D4537E'],
+            borderWidth: 1,
+            borderColor: '#fff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '60%',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ` ${ctx.parsed.toLocaleString()} ราย`
+              }
+            }
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
